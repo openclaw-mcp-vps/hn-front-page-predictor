@@ -4,31 +4,30 @@ Build a complete, production-ready Next.js 15 App Router application.
 
 PROJECT: hn-front-page-predictor
 HEADLINE: Predict if your Show HN will hit front page
-WHAT: None
-WHY: None
-WHO PAYS: None
+WHAT: Analyzes your Show HN post before submission and predicts its probability of reaching the front page. Uses ML trained on thousands of successful/failed posts to score your title, timing, content type, and other ranking factors.
+WHY: Show HN posts get buried in /newest within minutes if they don't gain early traction. Developers spend weeks building something only to get 2 upvotes because they posted at the wrong time with a bad title. One front page hit can change your startup's trajectory.
+WHO PAYS: Solo founders and small dev teams launching side projects, dev tools, or early-stage startups. People who've built something worth sharing but lack the marketing intuition to package it for HN's audience.
 NICHE: developer-tools
 PRICE: $$9/mo
 
 ARCHITECTURE SPEC:
-A Next.js web app that analyzes Hacker News submission patterns and uses ML to predict front page success probability. Users paste their Show HN title/description, get a prediction score with improvement suggestions, and access historical analytics through a subscription model.
+Next.js app with ML prediction API that analyzes Show HN posts using trained models on historical data. Users input their post details, get a probability score with improvement suggestions, and access premium features via Lemon Squeezy subscription.
 
 PLANNED FILES:
 - app/page.tsx
 - app/predict/page.tsx
-- app/dashboard/page.tsx
 - app/api/predict/route.ts
 - app/api/webhooks/lemonsqueezy/route.ts
-- app/api/auth/[...nextauth]/route.ts
 - components/PredictionForm.tsx
-- components/PredictionResult.tsx
+- components/ScoreDisplay.tsx
 - components/PricingCard.tsx
-- lib/hn-analyzer.ts
-- lib/ml-predictor.ts
-- lib/database.ts
+- lib/ml-model.ts
+- lib/hn-data.ts
 - lib/lemonsqueezy.ts
+- lib/auth.ts
+- lib/database.ts
 
-DEPENDENCIES: next, react, tailwindcss, next-auth, prisma, @prisma/client, lemonsqueezy.js, axios, cheerio, date-fns, recharts, lucide-react
+DEPENDENCIES: next, tailwindcss, @lemonsqueezy/lemonsqueezy.js, next-auth, @vercel/postgres, zod, lucide-react, @tensorflow/tfjs-node, cheerio, date-fns
 
 REQUIREMENTS:
 - Next.js 15 with App Router (app/ directory)
@@ -36,17 +35,33 @@ REQUIREMENTS:
 - Tailwind CSS v4
 - shadcn/ui components (npx shadcn@latest init, then add needed components)
 - Dark theme ONLY — background #0d1117, no light mode
-- Lemon Squeezy checkout overlay for payments
+- Stripe Payment Link for payments (hosted checkout — use the URL directly as the Buy button href)
 - Landing page that converts: hero, problem, solution, pricing, FAQ
 - The actual tool/feature behind a paywall (cookie-based access after purchase)
 - Mobile responsive
 - SEO meta tags, Open Graph tags
 - /api/health endpoint that returns {"status":"ok"}
+- NO HEAVY ORMs: Do NOT use Prisma, Drizzle, TypeORM, Sequelize, or Mongoose. If the tool needs persistence, use direct SQL via `pg` (Postgres) or `better-sqlite3` (local), or just filesystem JSON. Reason: these ORMs require schema files and codegen steps that fail on Vercel when misconfigured.
+- INTERNAL FILE DISCIPLINE: Every internal import (paths starting with `@/`, `./`, or `../`) MUST refer to a file you actually create in this build. If you write `import { Card } from "@/components/ui/card"`, then `components/ui/card.tsx` MUST exist with a real `export const Card` (or `export default Card`). Before finishing, scan all internal imports and verify every target file exists. Do NOT use shadcn/ui patterns unless you create every component from scratch — easier path: write all UI inline in the page that uses it.
+- DEPENDENCY DISCIPLINE: Every package imported in any .ts, .tsx, .js, or .jsx file MUST be
+  listed in package.json dependencies (or devDependencies for build-only). Before finishing,
+  scan all source files for `import` statements and verify every external package (anything
+  not starting with `.` or `@/`) appears in package.json. Common shadcn/ui peers that MUST
+  be added if used:
+  - lucide-react, clsx, tailwind-merge, class-variance-authority
+  - react-hook-form, zod, @hookform/resolvers
+  - @radix-ui/* (for any shadcn component)
+- After running `npm run build`, if you see "Module not found: Can't resolve 'X'", add 'X'
+  to package.json dependencies and re-run npm install + npm run build until it passes.
 
 ENVIRONMENT VARIABLES (create .env.example):
-- NEXT_PUBLIC_LEMON_SQUEEZY_STORE_ID
-- NEXT_PUBLIC_LEMON_SQUEEZY_PRODUCT_ID
-- LEMON_SQUEEZY_WEBHOOK_SECRET
+- NEXT_PUBLIC_STRIPE_PAYMENT_LINK  (full URL, e.g. https://buy.stripe.com/test_XXX)
+- NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY  (pk_test_... or pk_live_...)
+- STRIPE_WEBHOOK_SECRET  (set when webhook is wired)
+
+BUY BUTTON RULE: the Buy button's href MUST be `process.env.NEXT_PUBLIC_STRIPE_PAYMENT_LINK`
+used as-is — do NOT construct URLs from a product ID, do NOT prepend any base URL,
+do NOT wrap it in an embed iframe. The link opens Stripe's hosted checkout directly.
 
 After creating all files:
 1. Run: npm install
@@ -56,26 +71,3 @@ After creating all files:
 
 Do NOT use placeholder text. Write real, helpful content for the landing page
 and the tool itself. The tool should actually work and provide value.
-
-
-PREVIOUS ATTEMPT FAILED WITH:
-Codex exited 1: Reading additional input from stdin...
-OpenAI Codex v0.121.0 (research preview)
---------
-workdir: /tmp/openclaw-builds/hn-front-page-predictor
-model: gpt-5.3-codex
-provider: openai
-approval: never
-sandbox: danger-full-access
-reasoning effort: none
-reasoning summaries: none
-session id: 019d94e9-e022-7a60-98aa-703a14b3ce54
---------
-user
-# Build Task: hn-front-page-predictor
-
-Build a complete, production-ready Next.js 15 App Router application.
-
-PROJECT: hn-front-page-predictor
-HEADLINE: Predict if
-Please fix the above errors and regenerate.
